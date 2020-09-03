@@ -25,6 +25,18 @@
 #include <net/protocol.h>
 #include <net/dsa.h>
 
+#define QCA8K_PORT_LOOKUP_CTRL(_i)			(0x660 + (_i) * 0xc)
+#define   QCA8K_PORT_LOOKUP_MEMBER			GENMASK(6, 0)
+#define   QCA8K_PORT_LOOKUP_STATE_MASK			GENMASK(18, 16)
+#define   QCA8K_PORT_LOOKUP_STATE_DISABLED		(0 << 16)
+#define   QCA8K_PORT_LOOKUP_STATE_BLOCKING		(1 << 16)
+#define   QCA8K_PORT_LOOKUP_STATE_LISTENING		(2 << 16)
+#define   QCA8K_PORT_LOOKUP_STATE_LEARNING		(3 << 16)
+#define   QCA8K_PORT_LOOKUP_STATE_FORWARD		(4 << 16)
+#define   QCA8K_PORT_LOOKUP_STATE			GENMASK(18, 16)
+#define   QCA8K_PORT_LOOKUP_LEARN			BIT(20)
+
+
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Sergey Sergeev <sergey.sergeev@yapic.net>");
 MODULE_DESCRIPTION("kernel test");
@@ -39,26 +51,38 @@ static void *regs[] = {
 	0x0c, "PAD6_MODE",
 	0x10, "POWER_ON_STRIP",
 	0xe0, "SGMII_CTRL",
-	0xe4, "MAC_POWER_SEL",
-	0x7c, "PORT0_STATUS",
-	0x94, "PORT6_STATUS",
-	0x970, "QM_PORT0_CTRL0",
-	0x974, "QM_PORT0_CTRL1",
-	0x978, "QM_PORT1_CTRL0",
-	0x97c, "QM_PORT1_CTRL1",
-	0x980, "QM_PORT2_CTRL0",
-	0x984, "QM_PORT2_CTRL1",
-	0x988, "QM_PORT3_CTRL0",
-	0x98c, "QM_PORT3_CTRL1",
-	0x990, "QM_PORT4_CTRL0",
-	0x994, "QM_PORT4_CTRL1",
-	0x998, "QM_PORT5_CTRL0",
-	0x99c, "QM_PORT5_CTRL1",
-	0x9a0, "QM_PORT6_CTRL0",
-	0x9a4, "QM_PORT6_CTRL1"
+	0xe4, "MAC_POWER_SEL"
 };
 
 static u32 (*qca8k_read)(struct qca8k_priv *priv, u32 reg) = NULL;
+
+//*********************************************************
+static char *decode_port_state_bits(u32 val){
+	static char *vals[ ] = {
+		" DISABLED", //000
+		" BLOCKING", //001
+		"LISTENING", //010
+		" LEARNING", //011
+		"  FORWARD", //100
+		" UNKNOWN!", //> 100
+	};
+	val >>= 16;
+	val &= 0x7;
+	if(val > 0x4){
+		return vals[0x5];
+	}
+	return vals[val];
+}//--------------------------------------------------------
+
+//*********************************************************
+static char *decode_pbvm(unsigned int val){
+	static char ret[8];
+	char *p = ret + sizeof(ret) - 1;
+	val &= 0x7F;
+	for(*(p--) = '\0'; p >= ret; val >>= 1)
+		*(p--) = (val & 0x1) ? '1' : '0';
+	return ret;
+}//--------------------------------------------------------
 
 //*********************************************************
 //выполняется при загрузке модуля
@@ -102,6 +126,15 @@ static int __init test_m_module_init(void){
 		char *name = regs[a + 1];
 		vvv = qca8k_read(priv, reg);
 		printk(KERN_INFO "0x%04x: 0x%08x /* %s */\n", reg, vvv, name);
+	}
+	for(a = 0; a < 6; a++){
+		u32 reg = QCA8K_PORT_LOOKUP_CTRL(a);
+		vvv = qca8k_read(priv, reg);
+		printk(KERN_INFO "0x%04x: 0x%08x /* CTRL(%d), STATE = %s, LEARN = %s, PBVM = %s */\n",
+			reg, vvv, a, decode_port_state_bits(vvv),
+			vvv & QCA8K_PORT_LOOKUP_LEARN ? "On" : "OFF",
+			decode_pbvm(vvv)
+		);
 	}
 end:
 	dev_put(dev);
