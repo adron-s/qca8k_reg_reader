@@ -49,6 +49,7 @@ static void *regs[] = {
 	0xe0, "SGMII_CTRL",
 	0x3c, "MDIO_MASTER_CTRL",
 	0xe4, "MAC_POWER_SEL",
+	0x78, "MAX_FRAME_SIZE",
 	0x7c, "PORT0_STATUS",
 	0x94, "PORT6_STATUS"
 };
