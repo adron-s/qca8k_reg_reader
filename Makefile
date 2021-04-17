@@ -5,7 +5,8 @@ ifndef ARCH
   export KERNEL_DIR = /lib/modules/$(shell uname -r)/build
 endif
 ifeq ($(ARCH),mips)
- include $(PWD)/lede-mips.mk
+ include $(PWD)/openwrt.mk
+# include $(PWD)/lede-mips.mk
 endif
 ifeq ($(ARCH),arm)
  include $(PWD)/arm.mk
@@ -24,8 +25,8 @@ ccflags-y += -Wall
 
 all:
 #	make x86
-	make arm
-#	make mips
+#	make arm
+	make mips
 #	make e2k
 
 #CC := gcc -I/tmp/include

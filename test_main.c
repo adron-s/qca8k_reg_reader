@@ -228,6 +228,8 @@ static int __init test_m_module_init(void){
 			printk(KERN_ERR "qca8k_read == NULL!\n");
 			goto end;
 		}
+		printk(KERN_INFO "qca8k_read = 0x%lx\n", (unsigned long)qca8k_read);
+		//goto end;
 		//mutex_lock(&priv->reg_mutex);
 		for(a = 0; a < ARRAY_SIZE(regs); a+= 2){
 			u32 reg = regs[a];
@@ -235,18 +237,20 @@ static int __init test_m_module_init(void){
 			vvv = qca8k_read(priv, reg);
 			printk(KERN_INFO "0x%04x: 0x%08x /* %s */\n", reg, vvv, name);
 		}
-		//this causes glitches in qca8k! links fall for no reason!
-		for(a = 0; a < 6; a++){ // a < 6
-			u32 reg = QCA8K_PORT_LOOKUP_CTRL(a);
-			//u32 reg = QCA8K_REG_PORT_STATUS(a);
-			vvv = qca8k_read(priv, reg);
-			//printk(KERN_INFO "QCA8K_REG_PORT_STATUS(%d) = 0x%04x\n", a, vvv);
-			if(1){
-				printk(KERN_INFO "0x%04x: 0x%08x /* CTRL(%d), STATE = %s, LEARN = %s, PBVM = %s */\n",
-					reg, vvv, a, decode_port_state_bits(vvv),
-					vvv & QCA8K_PORT_LOOKUP_LEARN ? "On" : "OFF",
-					decode_pbvm(vvv)
-				);
+		if(0){
+			//this causes glitches in qca8k! links fall for no reason!
+			for(a = 0; a < 6; a++){ // a < 6
+				u32 reg = QCA8K_PORT_LOOKUP_CTRL(a);
+				//u32 reg = QCA8K_REG_PORT_STATUS(a);
+				vvv = qca8k_read(priv, reg);
+				//printk(KERN_INFO "QCA8K_REG_PORT_STATUS(%d) = 0x%04x\n", a, vvv);
+				if(1){
+					printk(KERN_INFO "0x%04x: 0x%08x /* CTRL(%d), STATE = %s, LEARN = %s, PBVM = %s */\n",
+						reg, vvv, a, decode_port_state_bits(vvv),
+						vvv & QCA8K_PORT_LOOKUP_LEARN ? "On" : "OFF",
+						decode_pbvm(vvv)
+					);
+				}
 			}
 		}
 		//mutex_unlock(&priv->reg_mutex);
